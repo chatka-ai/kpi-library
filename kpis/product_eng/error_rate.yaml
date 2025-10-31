@@ -1,1 +1,40 @@
 
+id: error_rate
+display_name: Error Rate
+domain: Product/Engineering
+category: Reliability
+aliases: ["errors per request"]
+description: Errors divided by total requests.
+grain: day
+dimensions:
+  - { name: day, semantic: temporal }
+  - { name: service, semantic: service }
+  - { name: endpoint, semantic: endpoint }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(errors), NULLIF(SUM(requests),0))"
+  notes: "Ensure 4xx/5xx policy; separate user vs server errors if needed."
+sql:
+  bigquery:
+    source_table: your_project.product_eng.performance_metrics
+    metric_view: your_project.analytics_mv.error_rate_daily
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE(day) AS day,
+        service, endpoint, region,
+        SAFE_DIVIDE(SUM(errors), NULLIF(SUM(requests),0)) AS error_rate
+      FROM `your_project.product_eng.performance_metrics`
+      WHERE day BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "error_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Endpoints with highest error rate?"
+    - "Error spikes by deploy?"
+demo:
+  seed_data: seeds/product_eng/performance_metrics.sample.csv
