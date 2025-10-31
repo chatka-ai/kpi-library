@@ -1,1 +1,4 @@
+day,service,endpoint,region,requests,errors,latency_ms,uptime_minutes,total_minutes,infra_cost,kloc,defects
+2025-06-01,api-orders,/orders,EU,120000,480,210,1430,1440,180.5,20,4
+2025-06-01,api-auth,/login,EU,80000,320,180,1440,1440,120.0,15,2
 
