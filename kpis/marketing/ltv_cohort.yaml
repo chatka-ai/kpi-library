@@ -1,0 +1,38 @@
+id: ltv_cohort
+display_name: Lifetime Value (Cohort)
+domain: Marketing
+category: Retention
+aliases: ["ltv"]
+description: Cumulative margin per acquisition cohort.
+grain: month
+dimensions:
+  - { name: cohort_month, semantic: temporal }
+  - { name: acquisition_channel, semantic: marketing_channel }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SUM(cohort_margin_cum)"
+  notes: "Prefer margin over revenue; cohorts formed by first purchase."
+sql:
+  bigquery:
+    source_table: your_project.marketing.acquisition_facts
+    metric_view: your_project.analytics_mv.ltv_cohort_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(cohort_month, MONTH) AS cohort_month,
+        acquisition_channel, region,
+        SUM(cohort_margin_cum) AS ltv_cohort
+      FROM `your_project.marketing.acquisition_facts`
+      WHERE cohort_month BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: nonneg
+    assertion: "ltv_cohort >= 0"
+examples:
+  business_questions:
+    - "Which cohorts exceed LTV targets?"
+    - "Channel cohorts with best LTV?"
+demo:
+  seed_data: seeds/marketing/acquisition_facts.sample.csv
