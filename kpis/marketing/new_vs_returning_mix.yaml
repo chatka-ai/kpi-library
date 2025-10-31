@@ -1,0 +1,39 @@
+id: new_vs_returning_mix
+display_name: New vs Returning Customer Mix
+domain: Marketing
+category: Growth
+aliases: ["new vs returning"]
+description: Share of new customers among all purchasers.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: channel, semantic: marketing_channel }
+  - { name: campaign, semantic: campaign }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(new_customers), NULLIF(SUM(new_customers)+SUM(returning_customers),0))"
+  notes: "Use consistent lookback for 'returning'."
+sql:
+  bigquery:
+    source_table: your_project.marketing.acquisition_facts
+    metric_view: your_project.analytics_mv.new_vs_returning_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', date) AS week,
+        channel, campaign, region,
+        SAFE_DIVIDE(SUM(new_customers), NULLIF(SUM(new_customers)+SUM(returning_customers),0)) AS new_vs_returning_mix
+      FROM `your_project.marketing.acquisition_facts`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "new_vs_returning_mix BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Mix shift by channel?"
+    - "Campaigns skewed to returning?"
+demo:
+  seed_data: seeds/marketing/acquisition_facts.sample.csv
