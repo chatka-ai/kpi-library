@@ -1,0 +1,41 @@
+id: delivery_delay
+display_name: Delivery Delay (minutes vs promised)
+domain: Supply Chain
+category: Last Mile
+aliases: ["lateness", "slot adherence"]
+description: Average minutes late vs promised slot for fulfilled orders.
+grain: day
+dimensions:
+  - { name: date, semantic: temporal }
+  - { name: region, semantic: geography }
+  - { name: cfc, semantic: facility }
+  - { name: spoke, semantic: facility }
+  - { name: carrier, semantic: logistics_partner }
+derived_from: [on_time_delivery_rate]
+business_rules:
+  late_threshold_min: 5
+formula:
+  expression: "AVG(TIMESTAMP_DIFF(actual_ts, promised_ts, MINUTE))"
+  notes: "Negative = early. Consider capping outliers at P99."
+sql:
+  bigquery:
+    source_table: your_project.retail_ops.delivery_facts
+    metric_view: your_project.analytics_mv.delivery_delay_daily
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE(delivery_ts) AS date,
+        region, cfc, spoke, carrier,
+        AVG(TIMESTAMP_DIFF(actual_ts, promised_ts, MINUTE)) AS delivery_delay_min
+      FROM `your_project.retail_ops.delivery_facts`
+      WHERE delivery_ts BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4,5
+tests:
+  - name: sane_range
+    assertion: "delivery_delay_min BETWEEN -180 AND 720"
+examples:
+  business_questions:
+    - "Why did delay rise in South during W26?"
+    - "Which carrier caused the biggest delay swing by CFC?"
+demo:
+  seed_data: seeds/supply_chain/delivery_facts.sample.csv
