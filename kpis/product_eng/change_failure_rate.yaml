@@ -1,1 +1,39 @@
+id: change_failure_rate
+display_name: Change Failure Rate
+domain: Product/Engineering
+category: Delivery
+aliases: ["CFR"]
+description: Failed deployments divided by total deployments.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: service, semantic: service }
+  - { name: team, semantic: org_unit }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(CASE WHEN status='failed' THEN 1 END), COUNT(deploy_id))"
+  notes: "Define 'failed' status consistently across pipelines."
+sql:
+  bigquery:
+    source_table: your_project.product_eng.deploy_events
+    metric_view: your_project.analytics_mv.change_failure_rate_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', day) AS week,
+        service, team,
+        SAFE_DIVIDE(SUM(CASE WHEN status='failed' THEN 1 END), COUNT(deploy_id)) AS change_failure_rate
+      FROM `your_project.product_eng.deploy_events`
+      WHERE day BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: bounds
+    assertion: "change_failure_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "CFR by service?"
+    - "Did rollout strategy reduce CFR?"
+demo:
+  seed_data: seeds/product_eng/deploy_events.sample.csv
 
