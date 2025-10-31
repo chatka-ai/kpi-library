@@ -1,1 +1,40 @@
 
+id: productivity_index
+display_name: Productivity Index (Ops)
+domain: HR
+category: Operations
+aliases: ["output per hour"]
+description: Output units divided by labor hours.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: cfc, semantic: facility }
+  - { name: spoke, semantic: facility }
+  - { name: team, semantic: org_unit }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(output_units), NULLIF(SUM(labor_hours),0))"
+  notes: "Check unit consistency (eaches, totes, orders)."
+sql:
+  bigquery:
+    source_table: your_project.hr.hr_time
+    metric_view: your_project.analytics_mv.productivity_index_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', week) AS week,
+        cfc, spoke, team,
+        SAFE_DIVIDE(SUM(output_units), NULLIF(SUM(labor_hours),0)) AS productivity_index
+      FROM `your_project.hr.hr_time`
+      WHERE week BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: nonneg
+    assertion: "productivity_index >= 0"
+examples:
+  business_questions:
+    - "Productivity by site?"
+    - "Shift patterns affecting output?"
+demo:
+  seed_data: seeds/hr/hr_time.sample.csv
