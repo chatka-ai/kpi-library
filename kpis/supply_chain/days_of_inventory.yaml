@@ -1,0 +1,41 @@
+id: days_of_inventory
+display_name: Days of Inventory (DOI)
+domain: Supply Chain
+category: Planning
+aliases: ["stock cover", "days cover"]
+description: On-hand inventory divided by average daily demand.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: dc, semantic: facility }
+  - { name: sku, semantic: product }
+  - { name: category, semantic: product_hierarchy }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules:
+  demand_window_days: 28
+formula:
+  expression: "SAFE_DIVIDE(SUM(on_hand_qty), NULLIF(AVG(daily_demand_qty),0))"
+  notes: "Pre-compute daily demand over trailing window; handle seasonality."
+sql:
+  bigquery:
+    source_table: your_project.supply.inventory_demand_daily
+    metric_view: your_project.analytics_mv.days_of_inventory_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', date) AS week,
+        dc, sku, category, region,
+        SAFE_DIVIDE(SUM(on_hand_qty), NULLIF(AVG(daily_demand_qty),0)) AS days_of_inventory
+      FROM `your_project.supply.inventory_demand_daily`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4,5
+tests:
+  - name: positive
+    assertion: "days_of_inventory >= 0"
+examples:
+  business_questions:
+    - "Which SKUs risk stockout (< 3 DOI)?"
+    - "Where is capital trapped in > 60 DOI?"
+demo:
+  seed_data: seeds/supply_chain/inventory_demand_daily.sample.csv
