@@ -1,0 +1,38 @@
+id: budget_variance_pct
+display_name: Budget Variance (%)
+domain: Finance
+category: Planning
+aliases: ["variance %", "plan variance"]
+description: (Actual − Budget) / Budget.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: region, semantic: geography }
+  - { name: cost_center, semantic: cost_center }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(actual) - SUM(budget), NULLIF(SUM(budget),0))"
+  notes: "Align periods and FX rates first."
+sql:
+  bigquery:
+    source_table: your_project.finance.facts_pnl
+    metric_view: your_project.analytics_mv.budget_variance_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(date, MONTH) AS month,
+        region, cost_center,
+        SAFE_DIVIDE(SUM(actual) - SUM(budget), NULLIF(SUM(budget),0)) AS budget_variance_pct
+      FROM `your_project.finance.facts_pnl`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: bounds
+    assertion: "budget_variance_pct BETWEEN -5 AND 5"
+examples:
+  business_questions:
+    - "Variance hotspots by cost center?"
+    - "Regions above budget?"
+demo:
+  seed_data: seeds/finance/finance_facts.sample.csv
