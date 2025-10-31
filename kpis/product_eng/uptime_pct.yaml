@@ -1,0 +1,38 @@
+id: uptime_pct
+display_name: Uptime / Availability (%)
+domain: Product/Engineering
+category: Reliability
+aliases: ["availability"]
+description: Availability percentage vs SLO.
+grain: day
+dimensions:
+  - { name: day, semantic: temporal }
+  - { name: service, semantic: service }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(uptime_minutes), NULLIF(SUM(total_minutes),0))"
+  notes: "Compute per region/service then aggregate appropriately."
+sql:
+  bigquery:
+    source_table: your_project.product_eng.performance_metrics
+    metric_view: your_project.analytics_mv.uptime_daily
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE(day) AS day,
+        service, region,
+        SAFE_DIVIDE(SUM(uptime_minutes), NULLIF(SUM(total_minutes),0)) AS uptime_pct
+      FROM `your_project.product_eng.performance_metrics`
+      WHERE day BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: bounds
+    assertion: "uptime_pct BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Uptime by region?"
+    - "SLO breaches last month?"
+demo:
+  seed_data: seeds/product_eng/performance_metrics.sample.csv
