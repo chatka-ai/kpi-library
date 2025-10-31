@@ -1,1 +1,39 @@
+id: training_hours_per_fte
+display_name: Training Hours per FTE
+domain: HR
+category: L&D
+aliases: ["training intensity"]
+description: Total training hours divided by FTE.
+grain: quarter
+dimensions:
+  - { name: quarter, semantic: temporal }
+  - { name: department, semantic: org_unit }
+  - { name: role_family, semantic: job_family }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(training_hours), NULLIF(SUM(fte),0))"
+  notes: "Confirm what counts as FTE in denominator."
+sql:
+  bigquery:
+    source_table: your_project.hr.hr_people
+    metric_view: your_project.analytics_mv.training_hours_per_fte_quarterly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(month, QUARTER) AS quarter,
+        department, role_family,
+        SAFE_DIVIDE(SUM(training_hours), NULLIF(SUM(fte),0)) AS training_hours_per_fte
+      FROM `your_project.hr.hr_people`
+      WHERE month BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: nonneg
+    assertion: "training_hours_per_fte >= 0"
+examples:
+  business_questions:
+    - "Which orgs invest most in training?"
+    - "Training vs promotion outcomes?"
+demo:
+  seed_data: seeds/hr/hr_people.sample.csv
 
