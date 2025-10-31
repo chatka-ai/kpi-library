@@ -1,4 +1,10 @@
 # kpi-library
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
+![License](https://img.shields.io/badge/license-Apache--2.0-blue)
+![Coverage](https://img.shields.io/badge/templates-50%2B-orange)
+![SQL](https://img.shields.io/badge/SQL-BigQuery-red)
+![Made by](https://img.shields.io/badge/made_by-Chatka-black)
+
 
 Reusable, BigQuery-ready KPI templates + tiny synthetic seed datasets for agentic analytics systems.
 Built by Chatka to accelerate onboarding, demos, and production rollouts across functions (Supply Chain, Finance, Marketing, HR, Product/Engineering).
