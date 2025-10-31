@@ -1,1 +1,40 @@
+id: offer_acceptance_rate
+display_name: Offer Acceptance Rate
+domain: HR
+category: Recruiting
+aliases: ["offer accept rate"]
+description: Offers accepted divided by offers made.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: role_family, semantic: job_family }
+  - { name: level, semantic: level }
+  - { name: location, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(offers_accepted), NULLIF(SUM(offers_made),0))"
+  notes: "Exclude rescinded offers; align time of counting."
+sql:
+  bigquery:
+    source_table: your_project.hr.hr_recruiting
+    metric_view: your_project.analytics_mv.offer_acceptance_rate_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(month, MONTH) AS month,
+        role_family, level, location,
+        SAFE_DIVIDE(SUM(offers_accepted), NULLIF(SUM(offers_made),0)) AS offer_acceptance_rate
+      FROM `your_project.hr.hr_recruiting`
+      WHERE month BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "offer_acceptance_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Acceptance rate by role?"
+    - "Which locations struggle to convert offers?"
+demo:
+  seed_data: seeds/hr/hr_recruiting.sample.csv
 
