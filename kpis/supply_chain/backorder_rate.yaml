@@ -1,0 +1,40 @@
+id: backorder_rate
+display_name: Backorder Rate
+domain: Supply Chain
+category: Fulfilment
+aliases: ["bo rate"]
+description: Share of order lines not fulfilled at time of promise and moved to backorder.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: sku, semantic: product }
+  - { name: category, semantic: product_hierarchy }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules:
+  backorder_flag: "is_backordered"
+formula:
+  expression: "SAFE_DIVIDE(SUM(CASE WHEN is_backordered THEN 1 END), COUNT(order_line_id))"
+  notes: "Define precise backorder flag from OMS."
+sql:
+  bigquery:
+    source_table: your_project.retail_ops.order_lines
+    metric_view: your_project.analytics_mv.backorder_rate_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', order_date) AS week,
+        sku, category, region,
+        SAFE_DIVIDE(SUM(CASE WHEN is_backordered THEN 1 END), COUNT(order_line_id)) AS backorder_rate
+      FROM `your_project.retail_ops.order_lines`
+      WHERE order_date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "backorder_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Which categories have persistent backorders?"
+    - "Is backorder rate correlated with low supplier fill?"
+demo:
+  seed_data: seeds/supply_chain/order_lines.sample.csv
