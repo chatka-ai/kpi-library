@@ -71,6 +71,7 @@ dimensions:
   - { name: spoke,  semantic: facility }
   - { name: carrier, semantic: logistics_partner }
 derived_from: [on_time_deliveries]
+
 business_rules:
   late_threshold_min: 5
 formula:
