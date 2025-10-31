@@ -1,1 +1,40 @@
 
+id: attrition_rate
+display_name: Attrition Rate
+domain: HR
+category: Workforce
+aliases: ["turnover"]
+description: Leavers divided by average headcount.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: department, semantic: org_unit }
+  - { name: location, semantic: geography }
+  - { name: tenure_band, semantic: employee_segment }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(leavers), NULLIF(AVG(avg_headcount),0))"
+  notes: "Compute avg_headcount as midpoint or daily average."
+sql:
+  bigquery:
+    source_table: your_project.hr.hr_people
+    metric_view: your_project.analytics_mv.attrition_rate_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(month, MONTH) AS month,
+        department, location, tenure_band,
+        SAFE_DIVIDE(SUM(leavers), NULLIF(AVG(avg_headcount),0)) AS attrition_rate
+      FROM `your_project.hr.hr_people`
+      WHERE month BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "attrition_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Attrition hotspots?"
+    - "Attrition by tenure?"
+demo:
+  seed_data: seeds/hr/hr_people.sample.csv
