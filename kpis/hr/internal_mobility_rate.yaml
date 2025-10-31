@@ -1,1 +1,39 @@
+id: internal_mobility_rate
+display_name: Internal Mobility Rate
+domain: HR
+category: Talent
+aliases: ["mobility"]
+description: Internal moves divided by headcount.
+grain: quarter
+dimensions:
+  - { name: quarter, semantic: temporal }
+  - { name: department, semantic: org_unit }
+  - { name: level, semantic: level }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(internal_moves), NULLIF(AVG(headcount),0))"
+  notes: "Use average headcount in quarter."
+sql:
+  bigquery:
+    source_table: your_project.hr.hr_people
+    metric_view: your_project.analytics_mv.internal_mobility_rate_quarterly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(month, QUARTER) AS quarter,
+        department, level,
+        SAFE_DIVIDE(SUM(internal_moves), NULLIF(AVG(headcount),0)) AS internal_mobility_rate
+      FROM `your_project.hr.hr_people`
+      WHERE month BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: bounds
+    assertion: "internal_mobility_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Mobility by department?"
+    - "Does mobility correlate with retention?"
+demo:
+  seed_data: seeds/hr/hr_people.sample.csv
 
