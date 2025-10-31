@@ -1,0 +1,38 @@
+id: mttr
+display_name: Mean Time to Restore (MTTR)
+domain: Product/Engineering
+category: Reliability
+aliases: ["restore time"]
+description: Average time from incident start to recovery (minutes).
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: service, semantic: service }
+  - { name: severity, semantic: severity }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "AVG(TIMESTAMP_DIFF(recovered_at, started_at, MINUTE))"
+  notes: "Exclude long-running maintenance; ensure timezone consistency."
+sql:
+  bigquery:
+    source_table: your_project.product_eng.incidents
+    metric_view: your_project.analytics_mv.mttr_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', started_at) AS week,
+        service, severity,
+        AVG(TIMESTAMP_DIFF(recovered_at, started_at, MINUTE)) AS mttr
+      FROM `your_project.product_eng.incidents`
+      WHERE started_at BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: nonneg
+    assertion: "mttr >= 0"
+examples:
+  business_questions:
+    - "MTTR by severity?"
+    - "Which services have recurring long MTTR?"
+demo:
+  seed_data: seeds/product_eng/incidents.sample.csv
