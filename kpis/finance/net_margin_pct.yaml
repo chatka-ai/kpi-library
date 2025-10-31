@@ -1,0 +1,38 @@
+id: net_margin_pct
+display_name: Net Margin (%)
+domain: Finance
+category: Profitability
+aliases: ["net margin", "NM%"]
+description: Net income divided by revenue.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: region, semantic: geography }
+  - { name: bu, semantic: business_unit }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(net_income), NULLIF(SUM(revenue),0))"
+  notes: "Confirm net_income definition after non-operating items policy."
+sql:
+  bigquery:
+    source_table: your_project.finance.facts_pnl
+    metric_view: your_project.analytics_mv.net_margin_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(date, MONTH) AS month,
+        region, bu,
+        SAFE_DIVIDE(SUM(net_income), NULLIF(SUM(revenue),0)) AS net_margin_pct
+      FROM `your_project.finance.facts_pnl`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: bounds
+    assertion: "net_margin_pct BETWEEN -1 AND 1"
+examples:
+  business_questions:
+    - "Net margin trend by BU?"
+    - "Which regions drag net margin?"
+demo:
+  seed_data: seeds/finance/finance_facts.sample.csv
