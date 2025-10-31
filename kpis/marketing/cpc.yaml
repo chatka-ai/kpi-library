@@ -1,0 +1,39 @@
+id: cpc
+display_name: Cost per Click (CPC)
+domain: Marketing
+category: Efficiency
+aliases: ["cpc"]
+description: Spend divided by clicks.
+grain: day
+dimensions:
+  - { name: day, semantic: temporal }
+  - { name: channel, semantic: marketing_channel }
+  - { name: campaign, semantic: campaign }
+  - { name: creative, semantic: creative }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(acq_spend), NULLIF(SUM(clicks),0))"
+  notes: "Outliers may indicate fraud or tagging issues."
+sql:
+  bigquery:
+    source_table: your_project.marketing.web_analytics_facts
+    metric_view: your_project.analytics_mv.cpc_daily
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE(day) AS day,
+        channel, campaign, creative,
+        SAFE_DIVIDE(SUM(acq_spend), NULLIF(SUM(clicks),0)) AS cpc
+      FROM `your_project.marketing.web_analytics_facts`
+      WHERE day BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: nonneg
+    assertion: "cpc >= 0"
+examples:
+  business_questions:
+    - "CPC by channel?"
+    - "Which campaigns reduced CPC?"
+demo:
+  seed_data: seeds/marketing/web_analytics_facts.sample.csv
