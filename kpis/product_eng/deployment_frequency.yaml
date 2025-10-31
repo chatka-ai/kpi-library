@@ -1,1 +1,39 @@
+id: deployment_frequency
+display_name: Deployment Frequency
+domain: Product/Engineering
+category: Delivery
+aliases: ["deploy cadence"]
+description: Number of deployments per period.
+grain: day
+dimensions:
+  - { name: day, semantic: temporal }
+  - { name: service, semantic: service }
+  - { name: team, semantic: org_unit }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "COUNT(deploy_id)"
+  notes: "Ensure unique deploy_id per release."
+sql:
+  bigquery:
+    source_table: your_project.product_eng.deploy_events
+    metric_view: your_project.analytics_mv.deployment_frequency_daily
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE(day) AS day,
+        service, team,
+        COUNT(deploy_id) AS deployment_frequency
+      FROM `your_project.product_eng.deploy_events`
+      WHERE day BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: nonneg
+    assertion: "deployment_frequency >= 0"
+examples:
+  business_questions:
+    - "Deploys per service?"
+    - "Release cadence by team?"
+demo:
+  seed_data: seeds/product_eng/deploy_events.sample.csv
 
