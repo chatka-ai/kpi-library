@@ -1,1 +1,40 @@
+id: revenue
+display_name: Revenue
+domain: Finance
+category: Topline
+aliases: ["sales", "turnover"]
+description: Total recognized revenue over time.
+grain: day
+dimensions:
+  - { name: date, semantic: temporal }
+  - { name: region, semantic: geography }
+  - { name: channel, semantic: sales_channel }
+  - { name: product_category, semantic: product_hierarchy }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SUM(revenue)"
+  notes: "Use net recognized revenue; exclude taxes/fees if tracked separately."
+sql:
+  bigquery:
+    source_table: your_project.finance.facts_pnl
+    metric_view: your_project.analytics_mv.revenue_daily
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE(date) AS date,
+        region, channel, product_category,
+        SUM(revenue) AS revenue
+      FROM `your_project.finance.facts_pnl`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: positive
+    assertion: "revenue >= 0"
+examples:
+  business_questions:
+    - "Revenue trend by region?"
+    - "Which channels drove revenue last week?"
+demo:
+  seed_data: seeds/finance/finance_facts.sample.csv
 
