@@ -1,0 +1,39 @@
+id: p95_latency
+display_name: p95 Latency (ms)
+domain: Product/Engineering
+category: Performance
+aliases: ["tail latency"]
+description: 95th percentile response time in milliseconds.
+grain: day
+dimensions:
+  - { name: day, semantic: temporal }
+  - { name: service, semantic: service }
+  - { name: endpoint, semantic: endpoint }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "APPROX_QUANTILES(latency_ms, 100)[OFFSET(95)]"
+  notes: "Use request-weighted aggregation if raw events available."
+sql:
+  bigquery:
+    source_table: your_project.product_eng.performance_metrics
+    metric_view: your_project.analytics_mv.p95_latency_daily
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE(day) AS day,
+        service, endpoint, region,
+        APPROX_QUANTILES(latency_ms, 100)[OFFSET(95)] AS p95_latency
+      FROM `your_project.product_eng.performance_metrics`
+      WHERE day BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: nonneg
+    assertion: "p95_latency >= 0"
+examples:
+  business_questions:
+    - "Which endpoints regress on p95?"
+    - "Latency by region trend?"
+demo:
+  seed_data: seeds/product_eng/performance_metrics.sample.csv
