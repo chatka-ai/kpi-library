@@ -1,1 +1,3 @@
-
+day,service,team,deploy_id,status,commit_time,deploy_time
+2025-06-01,api-orders,Core,dep_001,success,2025-06-01T09:10:00Z,2025-06-01T10:00:00Z
+2025-06-02,api-auth,Core,dep_002,failed,2025-06-02T12:00:00Z,2025-06-02T12:20:00Z
