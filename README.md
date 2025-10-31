@@ -54,9 +54,6 @@ kpi-library/
 
 
 ---
-
-Example KPI (YAML)
-
 id: delivery_delay
 display_name: Delivery Delay (minutes vs promised)
 domain: Supply Chain
@@ -71,7 +68,6 @@ dimensions:
   - { name: spoke,  semantic: facility }
   - { name: carrier, semantic: logistics_partner }
 derived_from: [on_time_deliveries]
-
 business_rules:
   late_threshold_min: 5
 formula:
@@ -99,7 +95,6 @@ examples:
     - "Which carrier contributed most to delay last week by CFC?"
 demo:
   seed_data: seeds/supply_chain/delivery_facts.sample.csv
-
 
 ---
 
