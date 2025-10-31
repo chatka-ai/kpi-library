@@ -1,1 +1,39 @@
+id: email_performance
+display_name: Email Performance (Open%, Click%, Unsub%)
+domain: Marketing
+category: CRM
+aliases: ["email metrics"]
+description: Campaign email performance metrics.
+grain: campaign
+dimensions:
+  - { name: campaign, semantic: campaign }
+  - { name: audience_segment, semantic: audience }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "Open% = opens/sent; Click% = clicks/sent; Unsub% = unsubscribes/sent"
+  notes: "Compute each pct separately per campaign/segment."
+sql:
+  bigquery:
+    source_table: your_project.marketing.email_campaigns
+    metric_view: your_project.analytics_mv.email_performance_campaign
+    params: ["@dummy"]
+    query: |
+      SELECT
+        campaign, audience_segment, region,
+        SAFE_DIVIDE(SUM(opens), NULLIF(SUM(sent),0)) AS open_rate,
+        SAFE_DIVIDE(SUM(clicks), NULLIF(SUM(sent),0)) AS click_rate,
+        SAFE_DIVIDE(SUM(unsubscribes), NULLIF(SUM(sent),0)) AS unsub_rate
+      FROM `your_project.marketing.email_campaigns`
+      GROUP BY 1,2,3
+tests:
+  - name: bounds
+    assertion: "open_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Which segments click most?"
+    - "Unsub% trends by region?"
+demo:
+  seed_data: seeds/marketing/email_campaigns.sample.csv
 
