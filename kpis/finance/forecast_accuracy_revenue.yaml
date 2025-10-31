@@ -1,0 +1,38 @@
+id: forecast_accuracy_revenue
+display_name: Forecast Accuracy (Revenue)
+domain: Finance
+category: Planning
+aliases: ["forecast accuracy", "FA revenue"]
+description: 1 − |Forecast − Actual| / Actual.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: region, semantic: geography }
+  - { name: product_category, semantic: product_hierarchy }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "1 - SAFE_DIVIDE(ABS(SUM(revenue_fcst) - SUM(revenue)), NULLIF(SUM(revenue),0))"
+  notes: "Use same granularity/filters for forecast and actual."
+sql:
+  bigquery:
+    source_table: your_project.finance.facts_pnl
+    metric_view: your_project.analytics_mv.forecast_accuracy_rev_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(date, MONTH) AS month,
+        region, product_category,
+        1 - SAFE_DIVIDE(ABS(SUM(revenue_fcst) - SUM(revenue)), NULLIF(SUM(revenue),0)) AS forecast_accuracy_revenue
+      FROM `your_project.finance.facts_pnl`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: bounds
+    assertion: "forecast_accuracy_revenue BETWEEN -3 AND 1"
+examples:
+  business_questions:
+    - "Which categories had low forecast accuracy?"
+    - "Accuracy by region over last 6m?"
+demo:
+  seed_data: seeds/finance/finance_facts.sample.csv
