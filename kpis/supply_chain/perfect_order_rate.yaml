@@ -1,0 +1,40 @@
+id: perfect_order_rate
+display_name: Perfect Order Rate (%)
+domain: Supply Chain
+category: Fulfilment
+aliases: ["order quality", "defect-free orders"]
+description: Share of orders with no delay, damage, shortage, or substitution.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: region, semantic: geography }
+  - { name: cfc, semantic: facility }
+  - { name: channel, semantic: sales_channel }
+derived_from: [on_time_delivery_rate, substitution_rate, shortages_rate]
+business_rules:
+  perfect_conditions: ["on_time", "no_damage", "no_shortage", "no_substitution"]
+formula:
+  expression: "SAFE_DIVIDE(SUM(CASE WHEN is_perfect THEN 1 END), COUNT(order_id))"
+  notes: "is_perfect boolean pre-computed or compute from conditions."
+sql:
+  bigquery:
+    source_table: your_project.retail_ops.order_facts
+    metric_view: your_project.analytics_mv.perfect_orders_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', order_date) AS week,
+        region, cfc, channel,
+        SAFE_DIVIDE(SUM(CASE WHEN is_perfect THEN 1 END), COUNT(order_id)) AS perfect_order_rate
+      FROM `your_project.retail_ops.order_facts`
+      WHERE order_date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "perfect_order_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Which channels lead on perfect orders by region?"
+    - "Did perfect orders drop with substitution spikes?"
+demo:
+  seed_data: seeds/supply_chain/order_facts.sample.csv
