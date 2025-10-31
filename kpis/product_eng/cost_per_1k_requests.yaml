@@ -1,1 +1,40 @@
+id: cost_per_1k_requests
+display_name: Cost per 1k Requests
+domain: Product/Engineering
+category: Cost
+aliases: ["cpk"]
+description: Infrastructure cost per 1000 requests.
+grain: day
+dimensions:
+  - { name: day, semantic: temporal }
+  - { name: service, semantic: service }
+  - { name: region, semantic: geography }
+  - { name: instance_type, semantic: infra }
+derived_from: []
+business_rules: []
+formula:
+  expression: "SAFE_DIVIDE(SUM(infra_cost), NULLIF(SUM(requests)/1000.0,0))"
+  notes: "Allocate shared costs before computing."
+sql:
+  bigquery:
+    source_table: your_project.product_eng.performance_metrics
+    metric_view: your_project.analytics_mv.cost_per_1k_requests_daily
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE(day) AS day,
+        service, region, instance_type,
+        SAFE_DIVIDE(SUM(infra_cost), NULLIF(SUM(requests)/1000.0,0)) AS cost_per_1k_requests
+      FROM `your_project.product_eng.performance_metrics`
+      WHERE day BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: nonneg
+    assertion: "cost_per_1k_requests >= 0"
+examples:
+  business_questions:
+    - "Which service is most costly per req?"
+    - "Cost drift by instance type?"
+demo:
+  seed_data: seeds/product_eng/performance_metrics.sample.csv
 
