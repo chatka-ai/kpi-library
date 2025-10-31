@@ -1,1 +1,38 @@
+id: defect_density
+display_name: Defect Density
+domain: Product/Engineering
+category: Quality
+aliases: ["bugs per kloc"]
+description: Defects per KLOC or per story points.
+grain: sprint
+dimensions:
+  - { name: sprint, semantic: temporal }
+  - { name: service, semantic: service }
+  - { name: module, semantic: module }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(defects), NULLIF(SUM(kloc),0))"
+  notes: "Alternatively use issues/story points as denominator."
+sql:
+  bigquery:
+    source_table: your_project.product_eng.performance_metrics
+    metric_view: your_project.analytics_mv.defect_density_sprint
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        sprint, service, module,
+        SAFE_DIVIDE(SUM(defects), NULLIF(SUM(kloc),0)) AS defect_density
+      FROM `your_project.product_eng.performance_metrics`
+      WHERE sprint BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: bounds
+    assertion: "defect_density BETWEEN 0 AND 100"
+examples:
+  business_questions:
+    - "Modules with highest defects?"
+    - "Defect trend per sprint?"
+demo:
+  seed_data: seeds/product_eng/performance_metrics.sample.csv
 
