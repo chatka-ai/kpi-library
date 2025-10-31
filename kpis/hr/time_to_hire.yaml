@@ -1,1 +1,40 @@
+id: time_to_hire
+display_name: Time to Hire (days)
+domain: HR
+category: Recruiting
+aliases: ["TTH"]
+description: Average days from requisition open to offer accept.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: role_family, semantic: job_family }
+  - { name: level, semantic: level }
+  - { name: location, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "AVG(DATE_DIFF(accept_date, req_open_date, DAY))"
+  notes: "Exclude paused reqs; handle re-open cases."
+sql:
+  bigquery:
+    source_table: your_project.hr.hr_recruiting
+    metric_view: your_project.analytics_mv.time_to_hire_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(month, MONTH) AS month,
+        role_family, level, location,
+        AVG(DATE_DIFF(accept_date, req_open_date, DAY)) AS time_to_hire
+      FROM `your_project.hr.hr_recruiting`
+      WHERE month BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: nonneg
+    assertion: "time_to_hire >= 0"
+examples:
+  business_questions:
+    - "Which roles take longest to hire?"
+    - "Location differences in TTH?"
+demo:
+  seed_data: seeds/hr/hr_recruiting.sample.csv
 
