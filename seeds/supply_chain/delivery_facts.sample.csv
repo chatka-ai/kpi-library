@@ -1,1 +1,5 @@
+delivery_ts,promised_ts,region,cfc,spoke,carrier
+2025-06-01T14:10:00Z,2025-06-01T14:00:00Z,South,CFC_2,Spoke_17,FastShip
+2025-06-01T10:05:00Z,2025-06-01T10:00:00Z,South,CFC_2,Spoke_17,QuickMove
+2025-06-02T09:58:00Z,2025-06-02T10:00:00Z,South,CFC_3,Spoke_21,FastShip
 
