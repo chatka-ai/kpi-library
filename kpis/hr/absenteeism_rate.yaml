@@ -1,1 +1,39 @@
+id: absenteeism_rate
+display_name: Absenteeism Rate
+domain: HR
+category: Workforce
+aliases: ["absence rate"]
+description: Absent days divided by scheduled days.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: department, semantic: org_unit }
+  - { name: location, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(absent_days), NULLIF(SUM(scheduled_days),0))"
+  notes: "Verify sick vs unpaid leave handling."
+sql:
+  bigquery:
+    source_table: your_project.hr.hr_time
+    metric_view: your_project.analytics_mv.absenteeism_rate_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(month, MONTH) AS month,
+        department, location,
+        SAFE_DIVIDE(SUM(absent_days), NULLIF(SUM(scheduled_days),0)) AS absenteeism_rate
+      FROM `your_project.hr.hr_time`
+      WHERE month BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: bounds
+    assertion: "absenteeism_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Absenteeism by department?"
+    - "Seasonality in absences?"
+demo:
+  seed_data: seeds/hr/hr_time.sample.csv
 
