@@ -1,0 +1,41 @@
+id: route_utilization
+display_name: Route Utilization
+domain: Supply Chain
+category: Last Mile
+aliases: ["van utilization"]
+description: Delivered units vs route capacity.
+grain: day
+dimensions:
+  - { name: date, semantic: temporal }
+  - { name: route, semantic: transport_route }
+  - { name: carrier, semantic: logistics_partner }
+  - { name: vehicle_type, semantic: vehicle }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules:
+  capacity_src: "route_capacity"
+formula:
+  expression: "SAFE_DIVIDE(SUM(delivered_units), NULLIF(SUM(route_capacity_units),0))"
+  notes: "Ensure consistent unit of measure (eaches, totes, drops)."
+sql:
+  bigquery:
+    source_table: your_project.last_mile.route_runs
+    metric_view: your_project.analytics_mv.route_utilization_daily
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE(run_date) AS date,
+        route, carrier, vehicle_type, region,
+        SAFE_DIVIDE(SUM(delivered_units), NULLIF(SUM(route_capacity_units),0)) AS route_utilization
+      FROM `your_project.last_mile.route_runs`
+      WHERE run_date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4,5
+tests:
+  - name: bounds
+    assertion: "route_utilization BETWEEN 0 AND 2"
+examples:
+  business_questions:
+    - "Which routes are consistently under 70% utilized?"
+    - "Is utilization higher on weekend schedules?"
+demo:
+  seed_data: seeds/supply_chain/route_runs.sample.csv
