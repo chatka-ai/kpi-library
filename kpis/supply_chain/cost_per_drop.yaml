@@ -1,0 +1,41 @@
+id: cost_per_drop
+display_name: Cost per Drop
+domain: Supply Chain
+category: Last Mile
+aliases: ["cpd"]
+description: Total last-mile operating cost divided by number of drops.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: region, semantic: geography }
+  - { name: cfc, semantic: facility }
+  - { name: route, semantic: transport_route }
+  - { name: carrier, semantic: logistics_partner }
+derived_from: []
+business_rules:
+  include_costs: ["labor","fuel","leasing","3PL_fees"]
+formula:
+  expression: "SAFE_DIVIDE(SUM(last_mile_cost), NULLIF(SUM(drops),0))"
+  notes: "Align cost allocation window to delivery window."
+sql:
+  bigquery:
+    source_table: your_project.last_mile.cost_allocations
+    metric_view: your_project.analytics_mv.cost_per_drop_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', week_start) AS week,
+        region, cfc, route, carrier,
+        SAFE_DIVIDE(SUM(last_mile_cost), NULLIF(SUM(drops),0)) AS cost_per_drop
+      FROM `your_project.last_mile.cost_allocations`
+      WHERE week_start BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4,5
+tests:
+  - name: positive
+    assertion: "cost_per_drop >= 0"
+examples:
+  business_questions:
+    - "Which carriers have rising cost per drop?"
+    - "Did route redesign reduce CPD by CFC?"
+demo:
+  seed_data: seeds/supply_chain/cost_allocations.sample.csv
