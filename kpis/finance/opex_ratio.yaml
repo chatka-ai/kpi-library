@@ -1,0 +1,38 @@
+id: opex_ratio
+display_name: Operating Expense Ratio
+domain: Finance
+category: Efficiency
+aliases: ["opex/rev", "expense ratio"]
+description: Operating expenses divided by revenue.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: bu, semantic: business_unit }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(opex), NULLIF(SUM(revenue),0))"
+  notes: "Include only operating expenses per policy; exclude COGS."
+sql:
+  bigquery:
+    source_table: your_project.finance.facts_pnl
+    metric_view: your_project.analytics_mv.opex_ratio_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(date, MONTH) AS month,
+        bu, region,
+        SAFE_DIVIDE(SUM(opex), NULLIF(SUM(revenue),0)) AS opex_ratio
+      FROM `your_project.finance.facts_pnl`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: bounds
+    assertion: "opex_ratio BETWEEN 0 AND 5"
+examples:
+  business_questions:
+    - "OpEx ratio vs plan?"
+    - "Which BU has rising OpEx/Rev?"
+demo:
+  seed_data: seeds/finance/finance_facts.sample.csv
