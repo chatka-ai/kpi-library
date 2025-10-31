@@ -1,0 +1,39 @@
+id: diversity_mix
+display_name: Diversity Mix
+domain: HR
+category: Workforce
+aliases: ["representation"]
+description: Percentage by demographic category.
+grain: quarter
+dimensions:
+  - { name: quarter, semantic: temporal }
+  - { name: department, semantic: org_unit }
+  - { name: level, semantic: level }
+  - { name: location, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(COUNTIF(group = 'X'), NULLIF(COUNT(*),0))"
+  notes: "Compute per group/segment; ensure privacy thresholds."
+sql:
+  bigquery:
+    source_table: your_project.hr.hr_people
+    metric_view: your_project.analytics_mv.diversity_mix_quarterly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(month, QUARTER) AS quarter,
+        department, level, location,
+        SAFE_DIVIDE(COUNTIF(group = 'X'), NULLIF(COUNT(*),0)) AS diversity_mix_example
+      FROM `your_project.hr.hr_people`
+      WHERE month BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "diversity_mix_example BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Representation by level?"
+    - "Progress vs DEI targets?"
+demo:
+  seed_data: seeds/hr/hr_people.sample.csv
