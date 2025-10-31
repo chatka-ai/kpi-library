@@ -1,0 +1,40 @@
+id: inventory_accuracy
+display_name: Inventory Accuracy
+domain: Supply Chain
+category: Fulfilment
+aliases: ["stock accuracy"]
+description: Absolute variance between system and physical inventory as a share of physical.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: dc, semantic: facility }
+  - { name: sku, semantic: product }
+  - { name: category, semantic: product_hierarchy }
+derived_from: []
+business_rules:
+  abs_diff: true
+formula:
+  expression: "SAFE_DIVIDE(SUM(ABS(system_qty - physical_qty)), NULLIF(SUM(physical_qty),0))"
+  notes: "Use cycle counts or full counts; exclude write-offs if needed."
+sql:
+  bigquery:
+    source_table: your_project.supply.inventory_counts
+    metric_view: your_project.analytics_mv.inventory_accuracy_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(count_date, MONTH) AS month,
+        dc, sku, category,
+        SAFE_DIVIDE(SUM(ABS(system_qty - physical_qty)), NULLIF(SUM(physical_qty),0)) AS inventory_accuracy
+      FROM `your_project.supply.inventory_counts`
+      WHERE count_date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "inventory_accuracy BETWEEN 0 AND 1.5"
+examples:
+  business_questions:
+    - "Which DCs show persistent inventory variance?"
+    - "Do high-velocity SKUs have lower accuracy?"
+demo:
+  seed_data: seeds/supply_chain/inventory_counts.sample.csv
