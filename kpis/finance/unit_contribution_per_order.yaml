@@ -1,0 +1,38 @@
+id: unit_contribution_per_order
+display_name: Unit Economics (Contribution per Order)
+domain: Finance
+category: Unit Economics
+aliases: ["contribution per order"]
+description: Price per order minus variable cost per order.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: channel, semantic: sales_channel }
+  - { name: product_category, semantic: product_hierarchy }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "AVG(price_per_order - variable_cost_per_order)"
+  notes: "Ensure comparable baskets; optionally weight by orders."
+sql:
+  bigquery:
+    source_table: your_project.finance.facts_pnl
+    metric_view: your_project.analytics_mv.contribution_per_order_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', date) AS week,
+        channel, product_category,
+        AVG(price_per_order - variable_cost_per_order) AS unit_contribution_per_order
+      FROM `your_project.finance.facts_pnl`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: sane
+    assertion: "unit_contribution_per_order BETWEEN -10000 AND 10000"
+examples:
+  business_questions:
+    - "Contribution by channel?"
+    - "Which categories are dilutive?"
+demo:
+  seed_data: seeds/finance/finance_facts.sample.csv
