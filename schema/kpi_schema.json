@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KPI Template",
+  "type": "object",
+  "required": ["id", "display_name", "domain", "category", "description", "grain", "dimensions", "formula", "sql", "examples"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "display_name": {"type": "string"},
+    "domain": {"type": "string"},                 // e.g., "Supply Chain"
+    "category": {"type": "string"},               // e.g., "Last Mile"
+    "aliases": {"type": "array", "items": {"type": "string"}},
+    "description": {"type": "string"},
+    "grain": {"type": "string", "enum": ["day", "week", "month", "quarter"]},
+    "dimensions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string"},             // e.g., "region", "cfc", "spoke"
+          "semantic": {"type": "string"},         // e.g., "geography|facility|carrier"
+          "allowed_values": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "derived_from": {"type": "array", "items": {"type": "string"}},
+    "business_rules": {"type": "object"},
+    "formula": {
+      "type": "object",
+      "required": ["expression"],
+      "properties": {
+        "expression": {"type": "string"},         // human-readable math
+        "notes": {"type": "string"}
+      }
+    },
+    "sql": {
+      "type": "object",
+      "required": ["bigquery"],
+      "properties": {
+        "bigquery": {
+          "type": "object",
+          "required": ["source_table", "query"],
+          "properties": {
+            "source_table": {"type": "string"},   // `project.dataset.table`
+            "metric_view": {"type": "string"},    // optional: `project.dataset.view`
+            "params": {
+              "type": "array",
+              "items": {"type": "string"}         // e.g., ["@start_date","@end_date"]
+            },
+            "query": {"type": "string"}           // parameterized SQL
+          }
+        }
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "assertion"],
+        "properties": {
+          "name": {"type": "string"},
+          "assertion": {"type": "string"}         // simple check note (human)
+        }
+      }
+    },
+    "examples": {
+      "type": "object",
+      "required": ["business_questions"],
+      "properties": {
+        "business_questions": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "demo": {
+      "type": "object",
+      "properties": {
+        "seed_data": {"type": "string"},          // path to CSV in /seeds
+        "notebook": {"type": "string"}            // optional
+      }
+    },
+    "metadata": {"type": "object"}                // free-form extras
+  }
+}
