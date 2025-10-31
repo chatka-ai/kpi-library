@@ -1,0 +1,39 @@
+id: cpa
+display_name: Cost per Acquisition (CPA)
+domain: Marketing
+category: Efficiency
+aliases: ["cpa"]
+description: Spend divided by conversions.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: channel, semantic: marketing_channel }
+  - { name: campaign, semantic: campaign }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(acq_spend), NULLIF(SUM(conversions),0))"
+  notes: "Ensure the same conversion definition across channels."
+sql:
+  bigquery:
+    source_table: your_project.marketing.acquisition_facts
+    metric_view: your_project.analytics_mv.cpa_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', date) AS week,
+        channel, campaign, region,
+        SAFE_DIVIDE(SUM(acq_spend), NULLIF(SUM(conversions),0)) AS cpa
+      FROM `your_project.marketing.acquisition_facts`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: nonneg
+    assertion: "cpa >= 0"
+examples:
+  business_questions:
+    - "CPA vs target?"
+    - "Channel mix impact on CPA?"
+demo:
+  seed_data: seeds/marketing/acquisition_facts.sample.csv
