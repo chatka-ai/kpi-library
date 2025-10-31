@@ -1,0 +1,39 @@
+id: headcount
+display_name: Headcount
+domain: HR
+category: Workforce
+aliases: ["employees", "HC"]
+description: Active employees count.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: department, semantic: org_unit }
+  - { name: location, semantic: geography }
+  - { name: band, semantic: level }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "COUNTIF(status = 'active')"
+  notes: "Ensure snapshot at period end for consistency."
+sql:
+  bigquery:
+    source_table: your_project.hr.hr_people
+    metric_view: your_project.analytics_mv.headcount_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(month, MONTH) AS month,
+        department, location, band,
+        COUNTIF(status = 'active') AS headcount
+      FROM `your_project.hr.hr_people`
+      WHERE month BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: nonneg
+    assertion: "headcount >= 0"
+examples:
+  business_questions:
+    - "Headcount by department?"
+    - "Location growth trend?"
+demo:
+  seed_data: seeds/hr/hr_people.sample.csv
