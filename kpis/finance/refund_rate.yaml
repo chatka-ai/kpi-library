@@ -1,1 +1,40 @@
+id: refund_rate
+display_name: Refund/Return Rate
+domain: Finance
+category: Revenue Quality
+aliases: ["return rate"]
+description: Returned orders divided by total orders.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: channel, semantic: sales_channel }
+  - { name: product_category, semantic: product_hierarchy }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(returned_orders), NULLIF(SUM(total_orders),0))"
+  notes: "Consider partial returns; align order counting rules."
+sql:
+  bigquery:
+    source_table: your_project.finance.facts_pnl
+    metric_view: your_project.analytics_mv.refund_rate_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', date) AS week,
+        channel, product_category, region,
+        SAFE_DIVIDE(SUM(returned_orders), NULLIF(SUM(total_orders),0)) AS refund_rate
+      FROM `your_project.finance.facts_pnl`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "refund_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Which categories have high returns?"
+    - "Return rate by channel trend?"
+demo:
+  seed_data: seeds/finance/finance_facts.sample.csv
 
