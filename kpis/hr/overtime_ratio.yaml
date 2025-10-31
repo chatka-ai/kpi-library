@@ -1,1 +1,39 @@
+id: overtime_ratio
+display_name: Overtime Ratio
+domain: HR
+category: Workforce
+aliases: ["overtime share"]
+description: Overtime hours divided by total hours.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: department, semantic: org_unit }
+  - { name: location, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(overtime_hours), NULLIF(SUM(total_hours),0))"
+  notes: "Ensure paid vs unpaid overtime policy is clear."
+sql:
+  bigquery:
+    source_table: your_project.hr.hr_time
+    metric_view: your_project.analytics_mv.overtime_ratio_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', week) AS week,
+        department, location,
+        SAFE_DIVIDE(SUM(overtime_hours), NULLIF(SUM(total_hours),0)) AS overtime_ratio
+      FROM `your_project.hr.hr_time`
+      WHERE week BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: bounds
+    assertion: "overtime_ratio BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Which teams rely on overtime?"
+    - "Overtime spikes vs workload?"
+demo:
+  seed_data: seeds/hr/hr_time.sample.csv
 
