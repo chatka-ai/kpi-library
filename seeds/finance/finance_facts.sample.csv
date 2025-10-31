@@ -1,1 +1,4 @@
-
+date,region,channel,product_category,revenue,cogs
+2025-05-01,South,Online,Electronics,120000,90000
+2025-05-01,South,Online,Home,80000,52000
+2025-05-01,North,Retail,Electronics,60000,48000
