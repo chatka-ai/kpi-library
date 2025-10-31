@@ -1,1 +1,39 @@
+id: ebitda
+display_name: EBITDA
+domain: Finance
+category: Profitability
+aliases: ["earnings pre-ITDA"]
+description: Earnings before interest, taxes, depreciation and amortization.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: bu, semantic: business_unit }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SUM(ebitda)"
+  notes: "Ensure EBITDA computed consistently from P&L lines."
+sql:
+  bigquery:
+    source_table: your_project.finance.facts_pnl
+    metric_view: your_project.analytics_mv.ebitda_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(date, MONTH) AS month,
+        bu, region,
+        SUM(ebitda) AS ebitda
+      FROM `your_project.finance.facts_pnl`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: noneg
+    assertion: "ebitda IS NOT NULL"
+examples:
+  business_questions:
+    - "EBITDA vs budget by BU?"
+    - "EBITDA seasonality by region?"
+demo:
+  seed_data: seeds/finance/finance_facts.sample.csv
 
