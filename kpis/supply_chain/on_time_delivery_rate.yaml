@@ -1,0 +1,41 @@
+id: on_time_delivery_rate
+display_name: On-Time Delivery Rate (%)
+domain: Supply Chain
+category: Last Mile
+aliases: ["otd", "on-time"]
+description: Share of deliveries arriving within the promised time window.
+grain: day
+dimensions:
+  - { name: date, semantic: temporal }
+  - { name: region, semantic: geography }
+  - { name: cfc, semantic: facility }
+  - { name: spoke, semantic: facility }
+  - { name: carrier, semantic: logistics_partner }
+derived_from: []
+business_rules:
+  on_time_window_min: 0
+formula:
+  expression: "SAFE_DIVIDE(SUM(CASE WHEN TIMESTAMP_DIFF(promised_ts, actual_ts, MINUTE) >= 0 THEN 1 END), COUNT(delivery_id))"
+  notes: "Define on-time as actual_ts <= promised_ts; adapt for early/late windows."
+sql:
+  bigquery:
+    source_table: your_project.retail_ops.delivery_facts
+    metric_view: your_project.analytics_mv.otd_daily
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE(delivery_ts) AS date,
+        region, cfc, spoke, carrier,
+        SAFE_DIVIDE(SUM(CASE WHEN actual_ts <= promised_ts THEN 1 END), COUNT(delivery_id)) AS on_time_rate
+      FROM `your_project.retail_ops.delivery_facts`
+      WHERE delivery_ts BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4,5
+tests:
+  - name: bounds
+    assertion: "on_time_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Which CFCs missed OTD targets last week?"
+    - "How did OTD trend by carrier in Q2?"
+demo:
+  seed_data: seeds/supply_chain/delivery_facts.sample.csv
