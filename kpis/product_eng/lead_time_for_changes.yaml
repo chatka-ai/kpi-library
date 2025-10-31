@@ -1,1 +1,39 @@
+id: lead_time_for_changes
+display_name: Lead Time for Changes
+domain: Product/Engineering
+category: Delivery
+aliases: ["lead time"]
+description: Average time from code commit to production deploy (minutes).
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: service, semantic: service }
+  - { name: team, semantic: org_unit }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "AVG(TIMESTAMP_DIFF(deploy_time, commit_time, MINUTE))"
+  notes: "Use first commit to that release; exclude rollbacks."
+sql:
+  bigquery:
+    source_table: your_project.product_eng.deploy_events
+    metric_view: your_project.analytics_mv.lead_time_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', deploy_time) AS week,
+        service, team,
+        AVG(TIMESTAMP_DIFF(deploy_time, commit_time, MINUTE)) AS lead_time_for_changes
+      FROM `your_project.product_eng.deploy_events`
+      WHERE deploy_time BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3
+tests:
+  - name: nonneg
+    assertion: "lead_time_for_changes >= 0"
+examples:
+  business_questions:
+    - "Which teams ship fastest?"
+    - "Lead time improvement after CI changes?"
+demo:
+  seed_data: seeds/product_eng/deploy_events.sample.csv
 
