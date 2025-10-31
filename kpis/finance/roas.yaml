@@ -1,0 +1,39 @@
+id: roas
+display_name: Return on Ad Spend (ROAS)
+domain: Marketing
+category: Performance
+aliases: ["roas"]
+description: Revenue attributed to ads divided by ad spend.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: channel, semantic: marketing_channel }
+  - { name: campaign, semantic: campaign }
+  - { name: region, semantic: geography }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(attributed_revenue), NULLIF(SUM(acq_spend),0))"
+  notes: "Attribution model matters; document assumptions."
+sql:
+  bigquery:
+    source_table: your_project.marketing.acquisition_facts
+    metric_view: your_project.analytics_mv.roas_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', date) AS week,
+        channel, campaign, region,
+        SAFE_DIVIDE(SUM(attributed_revenue), NULLIF(SUM(acq_spend),0)) AS roas
+      FROM `your_project.marketing.acquisition_facts`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "roas BETWEEN 0 AND 100"
+examples:
+  business_questions:
+    - "ROAS by channel?"
+    - "Which campaigns drive best ROAS?"
+demo:
+  seed_data: seeds/marketing/acquisition_facts.sample.csv
