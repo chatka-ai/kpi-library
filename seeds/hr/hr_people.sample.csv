@@ -1,1 +1,4 @@
+month,department,location,band,status,headcount,internal_moves,training_hours,fte,group
+2025-05-01,Ops,UK,Band3,active,120,4,320,118,Female
+2025-05-01,Tech,UK,Band4,active,80,6,210,80,Male
 
