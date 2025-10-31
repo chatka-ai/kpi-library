@@ -1,0 +1,41 @@
+id: supplier_fill_rate
+display_name: Supplier Fill Rate
+domain: Supply Chain
+category: Inbound
+aliases: ["fill rate", "supplier service level"]
+description: Proportion of ordered quantity that suppliers delivered.
+grain: week
+dimensions:
+  - { name: week, semantic: temporal }
+  - { name: supplier, semantic: partner }
+  - { name: sku, semantic: product }
+  - { name: category, semantic: product_hierarchy }
+  - { name: dc, semantic: facility }
+derived_from: []
+business_rules:
+  partials_count: true
+formula:
+  expression: "SAFE_DIVIDE(SUM(delivered_qty), NULLIF(SUM(ordered_qty),0))"
+  notes: "Confirm treatment of backorders and lead-time filters."
+sql:
+  bigquery:
+    source_table: your_project.supply.inbound_po_lines
+    metric_view: your_project.analytics_mv.supplier_fill_rate_weekly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        FORMAT_DATE('%G-W%V', delivery_date) AS week,
+        supplier, sku, category, dc,
+        SAFE_DIVIDE(SUM(delivered_qty), NULLIF(SUM(ordered_qty),0)) AS supplier_fill_rate
+      FROM `your_project.supply.inbound_po_lines`
+      WHERE delivery_date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4,5
+tests:
+  - name: bounds
+    assertion: "supplier_fill_rate BETWEEN 0 AND 1.2"
+examples:
+  business_questions:
+    - "Which suppliers underperformed fill rate last month?"
+    - "Is low fill rate driving shortages by category?"
+demo:
+  seed_data: seeds/supply_chain/inbound_po_lines.sample.csv
