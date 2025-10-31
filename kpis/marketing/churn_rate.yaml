@@ -1,1 +1,40 @@
+id: churn_rate
+display_name: Churn Rate
+domain: Marketing
+category: Retention
+aliases: ["attrition", "customer churn"]
+description: Lost customers divided by starting customers in period.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: plan, semantic: product }
+  - { name: region, semantic: geography }
+  - { name: tenure_band, semantic: customer_segment }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(lost_customers), NULLIF(SUM(start_customers),0))"
+  notes: "Define churn event precisely (e.g., 30/60/90-day inactivity)."
+sql:
+  bigquery:
+    source_table: your_project.marketing.acquisition_facts
+    metric_view: your_project.analytics_mv.churn_rate_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(month, MONTH) AS month,
+        plan, region, tenure_band,
+        SAFE_DIVIDE(SUM(lost_customers), NULLIF(SUM(start_customers),0)) AS churn_rate
+      FROM `your_project.marketing.acquisition_facts`
+      WHERE month BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "churn_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Churn by plan?"
+    - "New-user churn vs tenure?"
+demo:
+  seed_data: seeds/marketing/acquisition_facts.sample.csv
 
