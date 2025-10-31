@@ -1,1 +1,40 @@
+id: feature_adoption_rate
+display_name: Feature Adoption Rate
+domain: Product/Engineering
+category: Product
+aliases: ["adoption"]
+description: Active users of a feature divided by eligible users.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: feature, semantic: feature }
+  - { name: platform, semantic: platform }
+  - { name: cohort_month, semantic: temporal }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(active_users), NULLIF(SUM(eligible_users),0))"
+  notes: "Ensure eligibility logic is stable across cohorts."
+sql:
+  bigquery:
+    source_table: your_project.product_eng.usage_events
+    metric_view: your_project.analytics_mv.feature_adoption_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(month, MONTH) AS month,
+        feature, platform, cohort_month,
+        SAFE_DIVIDE(SUM(active_users), NULLIF(SUM(eligible_users),0)) AS feature_adoption_rate
+      FROM `your_project.product_eng.usage_events`
+      WHERE month BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "feature_adoption_rate BETWEEN 0 AND 1"
+examples:
+  business_questions:
+    - "Which features are sticky?"
+    - "Adoption by cohort/platform?"
+demo:
+  seed_data: seeds/product_eng/usage_events.sample.csv
 
