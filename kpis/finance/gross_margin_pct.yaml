@@ -1,0 +1,39 @@
+id: gross_margin_pct
+display_name: Gross Margin (%)
+domain: Finance
+category: Profitability
+aliases: ["GM%", "margin"]
+description: (Revenue − COGS) / Revenue.
+grain: month
+dimensions:
+  - { name: month, semantic: temporal }
+  - { name: region, semantic: geography }
+  - { name: channel, semantic: sales_channel }
+  - { name: product_category, semantic: product_hierarchy }
+derived_from: []
+business_rules: {}
+formula:
+  expression: "SAFE_DIVIDE(SUM(revenue) - SUM(cogs), NULLIF(SUM(revenue),0))"
+  notes: "Use SAFE_DIVIDE to avoid division by zero; ensure COGS alignment."
+sql:
+  bigquery:
+    source_table: your_project.finance.facts_pnl
+    metric_view: your_project.analytics_mv.gross_margin_monthly
+    params: ["@start_date", "@end_date"]
+    query: |
+      SELECT
+        DATE_TRUNC(date, MONTH) AS month,
+        region, channel, product_category,
+        SAFE_DIVIDE(SUM(revenue) - SUM(cogs), NULLIF(SUM(revenue),0)) AS gross_margin_pct
+      FROM `your_project.finance.facts_pnl`
+      WHERE date BETWEEN @start_date AND @end_date
+      GROUP BY 1,2,3,4
+tests:
+  - name: bounds
+    assertion: "gross_margin_pct BETWEEN -1 AND 1"
+examples:
+  business_questions:
+    - "Margin compression by category?"
+    - "Which regions improved GM%?"
+demo:
+  seed_data: seeds/finance/finance_facts.sample.csv
