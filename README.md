@@ -5,26 +5,6 @@
 ![SQL](https://img.shields.io/badge/SQL-BigQuery-red)
 ![Made by](https://img.shields.io/badge/made_by-Chatka-black)
 
-<p align="center">
-  <svg width="240" height="64" viewBox="0 0 480 128" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="g" x1="0" x2="1">
-        <stop offset="0%" stop-color="#0ea5e9"/>
-        <stop offset="100%" stop-color="#22c55e"/>
-      </linearGradient>
-    </defs>
-    <rect rx="14" ry="14" x="2" y="2" width="124" height="124" fill="url(#g)"/>
-    <g transform="translate(20,24)" fill="#ffffff">
-      <circle cx="20" cy="20" r="6"/><circle cx="48" cy="20" r="6"/><circle cx="36" cy="44" r="6"/>
-      <line x1="20" y1="20" x2="36" y2="44" stroke="#fff" stroke-width="3" opacity=".85"/>
-      <line x1="48" y1="20" x2="36" y2="44" stroke="#fff" stroke-width="3" opacity=".85"/>
-    </g>
-    <text x="150" y="80" font-size="42" font-family="Inter, Segoe UI, Roboto, Arial" fill="#111827">
-      Yukti KPI Library
-    </text>
-  </svg>
-</p>
-
 
 Reusable, BigQuery-ready KPI templates + tiny synthetic seed datasets for agentic analytics systems.
 Built by Chatka to accelerate onboarding, demos, and production rollouts across functions (Supply Chain, Finance, Marketing, HR, Product/Engineering).
